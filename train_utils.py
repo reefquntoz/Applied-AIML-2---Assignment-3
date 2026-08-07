@@ -14,8 +14,7 @@ def train(model, train_loader, optimiser, criterion, target_names, device, epoch
     """Train the model and report per-epoch training and validation metrics.
 
     Iterates over train_loader for the number of epochs, updating weights via optimiser.
-    A validation pass runs over the full training set after each epoch to compute
-    validation loss and a classification report.
+    A validation pass runs over the full training set after each epoch to compute validation loss and a classification report.
 
     Args:
         model (torch.nn.Module): Transformer encoder model to train.
@@ -43,8 +42,8 @@ def train(model, train_loader, optimiser, criterion, target_names, device, epoch
     start_time = time.time()
     # Training phase -------------------
     for epoch in range(1, epochs+1):
-        model.train()
-        epoch_loss = 0.0
+        model.train() # sets the neural network module and all its sub-modules into training mode
+        epoch_loss = 0.0 # initialise the epoch_loss
 
         for batch in train_loader:
             counter += 1
@@ -59,8 +58,8 @@ def train(model, train_loader, optimiser, criterion, target_names, device, epoch
             positive_probs = probabilities[:, 1] # positive class
             loss = criterion(positive_probs, labels.float()) # averaging the loss automatically
 
-            loss.backward()
-            optimiser.step()
+            loss.backward() # computes the derivative (gradient) of the loss with respect to all model parameters
+            optimiser.step() # updates the model's parameters (weights and biases) using the gradients computed during the backward pass
 
             epoch_loss += loss.item() * input_ids.size(0) # convert the average back to sum
 
@@ -69,7 +68,7 @@ def train(model, train_loader, optimiser, criterion, target_names, device, epoch
 
 
         # Validation phase -------------------
-        model.eval()
+        model.eval() # sets the neural network module and all its sub-modules into evaluation/testing mode
         val_loss = 0.0
         y_true_list, y_pred_list = [], []
 
@@ -103,11 +102,11 @@ def train(model, train_loader, optimiser, criterion, target_names, device, epoch
     conf_matrix = confusion_matrix(y_true_list, y_pred_list)
     print(f"The classification report is:")
     print(f"-" * 60)
-    print(training_report)
+    print(training_report) # display the training report
 
     print(f"The confusion matrix is:")
     print(f"-" * 60)
-    print(conf_matrix)
+    print(conf_matrix) # display the configuration matrix
 
     print(f"Displaying the Learning Curve and Confusion Matrix")
     plt.figure(figsize=(15, 5))
@@ -117,13 +116,13 @@ def train(model, train_loader, optimiser, criterion, target_names, device, epoch
     plt.xlabel("Epochs", fontsize=12)
     plt.ylabel("Loss", fontsize=12)
     plt.legend()
-    plt.show()
+    plt.show() # shot the learning curve plot
 
     end_time = time.time()
-    elapsed_time = end_time - start_time
+    elapsed_time = end_time - start_time # calculate the elapsed time
     display = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=target_names)
     display.plot(cmap=plt.cm.Blues)
-    plt.show()
+    plt.show() # show the confusion matrix
 
     print(f"\nThe training is completed!")
     print(f"\nElapsed training time is: {elapsed_time} seconds ({elapsed_time/60:.2f} minutes)")
@@ -137,8 +136,7 @@ def train(model, train_loader, optimiser, criterion, target_names, device, epoch
 def test(model, test_loader, target_names, device, result_dict):
     """Evaluate the model on the test set and report classification metrics.
 
-    Runs a single forward pass over all samples in test_loader. No gradient computation
-    or weight updates.
+    Runs a single forward pass over all samples in test_loader. No gradient computation or weight updates.
 
     Args:
         model (torch.nn.Module): Trained transformer encoder model.
@@ -148,9 +146,7 @@ def test(model, test_loader, target_names, device, result_dict):
         result_dict (dictionary): Existing result dictionary to merge the test report into.
 
     Returns:
-        dictionary: The input result_dict, with a 'test' key added containing the
-            classification_report output_dict (per-class precision, recall, f1-score,
-            support, 'accuracy', 'macro avg', and 'weighted avg').
+        dictionary: The input result_dict, with a 'test' key added containing the classification_report output_dict (per-class precision, recall, f1-score, support, 'accuracy', 'macro avg', and 'weighted avg').
     """
     model.eval()
     y_pred_list, y_true_list = [], []

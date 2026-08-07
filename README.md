@@ -1,90 +1,105 @@
-# MNIST CNN From Scratch (NumPy) — Assignment_2_v3-Arif-a1915248
+# Transformer From Scratch for IMDb Sentiment Analysis — Assignment_3_v1-Arif-a1915248
 
-This project implements a Convolutional Neural Network (CNN) for MNIST digit classification **entirely from scratch using NumPy** — forward pass, backpropagation, and the SGD weight update are all hand-written (no `torch.nn`, no autograd). PyTorch/torchvision are used only to download MNIST and serve it in mini-batches via `DataLoader`.
+This project implements a simplified Transformer encoder from scratch in PyTorch to classify IMDb movie reviews.
 
-This README covers `Assignment_2_v3-Arif-a1915248.ipynb` only.
+This README uses `Assignment_3_v1-Arif-a1915248.ipynb` as the reference notebook for the global settings, with a **Further Variants** section covering the other 7 notebooks.
 
 ## Summary
 
-`Assignment_2_v3-Arif-a1915248.ipynb` builds a 2 conv + 2 pool + 1 FC CNN and trains it on MNIST for 5 epochs using manually-derived gradients and mini-batch SGD (batch size 32) with He (Kaiming) weight initialisation. It trains on the raw, un-augmented MNIST images.
+`Assignment_3_v1-Arif-a1915248.ipynb` tokenises IMDb reviews with a custom word-frequency vocabulary (20,000 words), builds a 4-layer Transformer encoder (`d_model=64`, 4 attention heads, feed-forward width 256), and trains it for 10 epochs with the Adam optimiser (`lr=0.001`, batch size 32) and binary cross-entropy loss.
 
 ## Project Files
 
-- `Assignment_2_v3-Arif-a1915248.ipynb` — the notebook (dataset loading, model definition, training/evaluation calls).
-- `train_utils.py` — **required sibling module**. Defines the shared `one_hot()`, `train()`, and `test()` functions that the notebook imports (`from train_utils import train, test`); the model class itself (`ManualCNN`) still lives inline in the notebook.
+- `Assignment_3_v1-Arif-a1915248.ipynb` — the notebook (dataset loading, EDA, tokenisation, training/evaluation calls).
+- `train_utils.py` — Defines `train()` and `test()`, the shared training/evaluation loops used by every notebook version.
+- `transformer_encoder.py` — Defines the shared `TransformerEncoder` model and its building blocks (`TransformerEncoderBlock`, `MultiHeadAttention`, `PositionalEncoding`, `scaled_dot_product_attention`).
+- `tokenisation_utils.py` — Defines the shared word-frequency tokenisation functions (`tokenise_words`, `build_vocabulary`, `compute_oov_rate`, `tokenise_function`).
 
 ## Requirements
 
 - Python 3.9+
-- A Google Colab runtime with a linked Google Drive (see "How to Run" below)
-- Packages (pre-installed on Colab, or install manually):
-  - `numpy`
+- Packages:
   - `torch`
-  - `torchvision`
+  - `datasets` (HuggingFace)
   - `matplotlib`
+  - `seaborn`
   - `scikit-learn`
+  - `transformers` — only needed for `Assignment_3_v2-Arif-a1915248.ipynb` (BERT tokenizer variant)
+- Internet access, to download the IMDb dataset from the HuggingFace Hub on first run.
 
 ## Dataset
 
-- **Dataset**: MNIST handwritten digits (10 classes, digits 0–9), loaded via `torchvision.datasets.MNIST` with `download=True`. The dataset is fetched automatically into a local `./data` folder on first run.
-- **Split**: uses the standard MNIST split provided by torchvision — **60,000 training images** and **10,000 test images**. No separate held-out validation set is carved out of the training data; per-epoch "validation" metrics reported during training are computed by re-running inference over the full training set, not a distinct validation split.
-- **Preprocessing**: `Resize(28)` → `ToTensor()` (scales pixels to `[0, 1]`, shape `1×28×28`). No data augmentation is applied.
+- **Dataset**: IMDb movie reviews (`stanfordnlp/imdb`), loaded via `datasets.load_dataset`.
+- **Split**: 25,000 train reviews and 25,000 test reviews, each split balanced 12,500 positive / 12,500 negative.
+- **Tokenisation**: a custom word-frequency vocabulary is built from the training text only (never the test set). HTML `<br />` tags are stripped, text is lowercased and split into words, and only the 20,000 most frequent words are kept (plus `[PAD]` and `[UNK]`). Unknown words map to `[UNK]`. Train OOV rate: 2.29%. Test OOV rate: 2.97%.
+- **Sequence length**: each review is truncated or padded to `max_seq_length = 600` tokens.
 
 ## Step-by-step: How to Run
 
-This notebook is written for **Google Colab**: its first cell mounts Google Drive and adds a Drive folder to `sys.path` so it can `import train_utils`, and it saves pickled results to a Drive path (`RESULT_PATH`) rather than a local folder.
-
-1. Upload `Assignment_2_v3-Arif-a1915248.ipynb` and `train_utils.py` to the same Google Drive folder, e.g. `MyDrive/Colab Notebooks/APPLIED AIML 2/Assignment 2` (this is the path hard-coded in the notebook's `sys.path.insert(...)` call and `RESULT_PATH`; edit those two lines if you use a different folder).
-2. Open the notebook in Google Colab (double-click it in Drive, or upload it at colab.research.google.com).
+1. Keep `Assignment_3_v1-Arif-a1915248.ipynb`, `train_utils.py`, `transformer_encoder.py`, and `tokenisation_utils.py` in the same folder.
+2. Install the required packages.
 3. Run all cells top to bottom:
-   - The first cell prompts a Google Drive authorization popup — approve it so the notebook can mount `/content/drive` and import `train_utils`.
-   - Downloads MNIST (first run only), builds the ManualCNN, trains for 5 epochs, evaluates on the test set, and saves pickled metrics to `RESULT_PATH` on Drive.
+   - Downloads the IMDb dataset (first run only, needs internet access).
+   - Builds the word-frequency vocabulary, tokenises the dataset, and creates DataLoaders.
+   - Builds the `TransformerEncoder`, trains it for 10 epochs, and evaluates it on the test set.
 
-Note: training loops over every image individually (batch accumulation of per-sample gradients), so a full run takes roughly 20–25 minutes.
+Note: a full training run takes roughly 20 minutes on a GPU.
 
 ## Model Architecture
 
-`Assignment_2_v3-Arif-a1915248.ipynb` uses a `ManualCNN` class:
+`Assignment_3_v1-Arif-a1915248.ipynb` uses a `TransformerEncoder`:
 
-| Layer | Details |
+| Stage | Details |
 |---|---|
-| Input | 1×28×28 grayscale image |
-| Conv Layer 1 | 6 filters, 3×3 kernel, He (Kaiming) init, stride 1, no padding → ReLU |
-| Max Pool 1 | 2×2 window |
-| Conv Layer 2 | 16 filters, 3×3 kernel, He (Kaiming) init → ReLU |
-| Max Pool 2 | 2×2 window |
-| Flatten | → 400 features |
-| Fully Connected | 400 → 128, He init → ReLU |
-| Output | 128 → 10, Softmax |
+| Input | Token ids, shape (batch, 600) |
+| Embedding | `torch.nn.Embedding(20000, 64)`, padding id fixed at zero |
+| Positional Encoding | Fixed sinusoidal encoding, added to the embeddings |
+| Encoder Block x4 | Multi-head self-attention (4 heads) -> residual + LayerNorm -> feed-forward (64 -> 256 -> 64, ReLU) -> residual + LayerNorm |
+| Pooling | Mean-pool token representations, ignoring padding positions |
+| Classification Head | `torch.nn.Linear(64, 2)` -> Softmax |
 
 Implementation notes:
-- Convolution is implemented as cross-correlation using `numpy.lib.stride_tricks.sliding_window_view` combined with `einsum`, rather than explicit nested loops.
-- Max pooling stores an argmax mask so the pooling gradient can be routed back to the correct input position during backprop.
-- Loss is manual categorical cross-entropy against one-hot encoded labels.
-- Backpropagation is fully manual: gradients are derived layer-by-layer and returned as a dictionary.
-- Weight updates use mini-batch SGD: per-sample gradients are accumulated over a batch, averaged, and applied once per batch
+- Attention is standard scaled dot-product attention.
+- Each encoder block is the "post-layer-norm" variant.
+- The attention mask (from padding) is used both inside self-attention and during mean pooling.
 
 ## Hyperparameters
 
-### `Assignment_2_v3-Arif-a1915248.ipynb`
+### `Assignment_3_v1-Arif-a1915248.ipynb`
 | Hyperparameter | Value |
 |---|---|
-| Learning rate | 0.01 |
+| Vocabulary size | 20,000 |
+| Max sequence length | 600 |
+| Encoder layers | 4 |
+| Model dimension (d_model) | 64 |
+| Attention heads | 4 |
+| Feed-forward width (d_ff) | 256 |
+| Dropout | 0.1 |
 | Batch size | 32 |
-| Epochs | 5 |
-| Hidden layer size | 128 |
-| Pooling window | 2×2 |
-| Weight init | He (Kaiming) |
-| Data augmentation | None |
+| Learning rate | 0.001 |
+| Epochs | 10 |
+| Optimiser | Adam |
+| Loss function | Binary Cross-Entropy |
 
 ## Results
 
-### `Assignment_2_v3-Arif-a1915248.ipynb`
-- Final training loss (epoch 5/5): **0.10**
-- Test set — weighted avg precision/recall/f1: **~0.97**, overall **accuracy: 97.34%**
-- Training time: ≈1266 s (≈21.1 min)
-- Testing time: ≈13.0 s
+### `Assignment_3_v1-Arif-a1915248.ipynb`
+- Final training loss (epoch 10/10): **0.2053**; final validation loss: **0.1645**
+- Test set — accuracy: **0.8664**; weighted avg precision/recall/f1: **0.868 / 0.866 / 0.866**
+- Training time: ~1224 s (~20.4 min)
 
 ## Further Variants
 
-`Assignment_2_v4-Arif-a1915248.ipynb` through `Assignment_2_v6-Arif-a1915248.ipynb` (data augmentation, weight decay, and dropout variants respectively) are not covered in this README — see the report `Assignment_2-Arif-a1915248.pdf` for details.
+Each variant below changes exactly one setting from the `v1` baseline above; everything else stays the same.
+
+| Notebook | Change from v1 | Test Accuracy |
+|---|---|---|
+| `Assignment_3_v2-Arif-a1915248.ipynb` | BERT-base-uncased tokenisation (WordPiece tokenizer, retrained on the IMDb text so the vocabulary still caps at 20,000) | 0.8596 |
+| `Assignment_3_v3.1-Arif-a1915248.ipynb` | `max_seq_length = 256` | 0.8399 |
+| `Assignment_3_v3.2-Arif-a1915248.ipynb` | `max_seq_length = 1024` | 0.8621 |
+| `Assignment_3_v4.1-Arif-a1915248.ipynb` | Learning rate = 0.01 | 0.50 |
+| `Assignment_3_v4.2-Arif-a1915248.ipynb` | Learning rate = 0.0001 | 0.8498 |
+| `Assignment_3_v5.1-Arif-a1915248.ipynb` | No dropout (dropout = 0) | 0.8438 |
+| `Assignment_3_v5.2-Arif-a1915248.ipynb` | Dropout = 0.2 | 0.8621 |
+
+`Assignment_3_v2-Arif-a1915248.ipynb` needs the extra `transformers` package and downloads the `bert-base-uncased` tokenizer from the HuggingFace Hub on first run. All other variants use the same dependencies as `v1`.

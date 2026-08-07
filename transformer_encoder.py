@@ -1,7 +1,6 @@
 """Shared Transformer encoder architecture for the transformer assignment.
 
-Provides scaled_dot_product_attention() and the MultiHeadAttention, PositionalEncoding,
-TransformerEncoderBlock, and TransformerEncoder modules used across all notebook versions.
+Provides scaled_dot_product_attention() and the MultiHeadAttention, PositionalEncoding, TransformerEncoderBlock, and TransformerEncoder modules used across all notebook versions.
 """
 
 import math
@@ -90,9 +89,7 @@ class MultiHeadAttention(torch.nn.Module):
             mask (torch.Tensor, optional): Attention mask. Defaults to None.
 
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: Attention output of shape
-                (batch_size, seq_len, d_model) and the per-head attention
-                weights.
+            tuple[torch.Tensor, torch.Tensor]: Attention output of shape (batch_size, seq_len, d_model) and the per-head attention weights.
         """
         batch_size = query.size(0)
         query = self.split_heads(self.wq(query), batch_size)
@@ -163,8 +160,7 @@ class PositionalEncoding(torch.nn.Module):
 class TransformerEncoderBlock(torch.nn.Module):
     """Single Transformer encoder block.
 
-    Applies multi-head self-attention followed by a residual connection and layer normalisation,
-    then a position-wise feed-forward network followed by another residual connection and layer normalisation.
+    Applies multi-head self-attention followed by a residual connection and layer normalisation, then a position-wise feed-forward network followed by another residual connection and layer normalisation.
     Residual connections let gradients flow directly through the network, makes many layers trainable.
 
     Attributes:

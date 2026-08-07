@@ -1,8 +1,6 @@
 """Shared frequency-based word tokenisation for the transformer assignment.
 
-Provides tokenise_words(), build_vocabulary(), compute_oov_rate(), and tokenise_function()
-used across the notebook versions that build a custom word-frequency vocabulary instead of
-a pretrained WordPiece tokeniser.
+Provides tokenise_words(), build_vocabulary(), compute_oov_rate(), and tokenise_function() used across the notebook versions that build a custom word-frequency vocabulary instead of a pretrained WordPiece tokeniser.
 """
 
 import re
@@ -13,8 +11,7 @@ from collections import Counter
 def tokenise_words(text):
     """Tokenise raw review text into lowercase words.
 
-    Strips IMDb's literal ``<br />`` HTML line-break tags and splits the
-    remaining text into lowercase word tokens, ignoring punctuation.
+    Strips IMDb's literal ``<br />`` HTML line-break tags and splits the remaining text into lowercase word tokens, ignoring punctuation.
 
     Args:
         text (str): Raw review text.
@@ -73,8 +70,7 @@ def compute_oov_rate(dataset, word_to_id):
 def tokenise_function(examples, word_to_id, unk_token_id, pad_token_id, max_seq_length):
     """Convert a batch of raw review texts into padded token id sequences.
 
-    Tokenises each text with tokenise_words, maps words to ids via word_to_id (unknown words
-    map to unk_token_id), then truncates/pads every sequence to max_seq_length.
+    Tokenises each text with tokenise_words, maps words to ids via word_to_id (unknown words map to unk_token_id), then truncates/pads every sequence to max_seq_length.
 
     Args:
         examples (dict): Batch of dataset examples containing a "text" key.
